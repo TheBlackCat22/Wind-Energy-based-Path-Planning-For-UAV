@@ -43,8 +43,10 @@ class WindField(Env):
 
     
     def step(self,action):
-        self.history.append[self.state[:,1]]
+        #self.history.append[self.state[:,1]]
+        #return [self.state,reward,done]
         pass
+    
     
     def render(self):
         canvas=np.zeros((100*self.size,100*self.size,3),dtype=np.uint8)
