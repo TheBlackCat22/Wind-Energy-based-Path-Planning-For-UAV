@@ -33,8 +33,7 @@ class WindField(Env):
         for i in range(2,5):
             self.targets.append((size-1,size-1)+(i,))
         
-        
-        
+         
     def reset(self):
         
         self.state=(0,0,3)
@@ -53,7 +52,7 @@ class WindField(Env):
         
         canvas[0:100,0:100,:]=255*np.ones_like(canvas[0:100,0:100,:])
         
-        canvas[600:700,600:700,1]=255*np.ones_like(canvas[0:100,0:100,1])
+        canvas[(100*self.size)-100:100*self.size,(100*self.size)-100:100*self.size,1]=255*np.ones_like(canvas[0:100,0:100,1])
         
         airplane=imutils.resize(255*plt.imread(r"assets\airplane.png")[:,:,:3],width=100)
         pos=(100*self.state[1],100*self.state[0])
