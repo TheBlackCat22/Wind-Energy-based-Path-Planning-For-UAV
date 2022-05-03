@@ -50,9 +50,11 @@ class WindField(Env):
     def render(self):
         canvas=np.zeros((100*self.size,100*self.size,3),dtype=np.uint8)
         
-        canvas[0:100,0:100,:]=255*np.ones_like(canvas[0:100,0:100,:])
+        triangle=imutils.resize(255*plt.imread(r"assets\triangle.png")[:,:,:3],width=50)
+        canvas[25:75,25:75]=triangle
         
-        canvas[(100*self.size)-100:100*self.size,(100*self.size)-100:100*self.size,1]=255*np.ones_like(canvas[0:100,0:100,1])
+        circle=imutils.resize(255*plt.imread(r"assets\circle.png")[:,:,:3],width=50)
+        canvas[(100*self.size)-75:(100*self.size)-25,(100*self.size)-75:(100*self.size)-25]=circle
         
         airplane=imutils.resize(255*plt.imread(r"assets\airplane.png")[:,:,:3],width=100)
         pos=(100*self.state[1],100*self.state[0])
@@ -72,8 +74,11 @@ class WindField(Env):
         
         if len(self.history)>1:
             for i in range(len(self.history)-1):
-                plt.plot([100*self.history[i][0]+50,100*self.history[i+1][0]+50],[100*self.history[i][1]+50,100*self.history[i+1][1]+50],marker="o",color="red", linewidth=1)
+                plt.plot([100*self.history[i][0]+50,100*self.history[i+1][0]+50],[100*self.history[i][1]+50,100*self.history[i+1][1]+50],color="white", linewidth=1)
         
         plt.grid(color="white")
+        plt.xticks(np.arange(0,100*self.size+1,100),(np.arange(0,100*self.size+1,100)/100).astype(np.int0))
+        plt.yticks(np.arange(0,100*self.size+1,100),(np.arange(0,100*self.size+1,100)/100).astype(np.int0))
+        plt.tick_params(axis='y', labelright=True,labelleft=False)
         plt.show()
         
