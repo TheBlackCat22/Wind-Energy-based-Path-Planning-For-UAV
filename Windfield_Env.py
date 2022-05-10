@@ -1,6 +1,8 @@
+from types import new_class
 import numpy as np
 import imutils
 import matplotlib.pyplot as plt
+from pandas import array
 from scipy.integrate import quad
 
 
@@ -13,41 +15,80 @@ class WindField():
         self.action_space=np.arange(8)
         
         self.observation_space_shape=(size,size,8)
+        
         self.state=(0,0,3)
         self.history=[(0,0)]
         
+        self.wind_field=None
+        
         self.targets=[]
         for i in range(2,5):
-            self.targets.append((size-1,size-1)+(i,))
-            
-        self.change_coordinates = {
-                                   'N':np.array([0,1,0]),
-                                   'NE':np.array([1,1,0]),
-                                   'E':np.array([1,0,0]),
-                                   'SE':np.array([1,-1,0]),
-                                   'S':np.array([0,-1,0]),
-                                   'SW':np.array([-1,-1,0]),
-                                   'W':np.array([-1,0,0]),
-                                   'NW':np.array([-1,1,0])
-                                   }
-        
+            self.targets.append((size-1,size-1)+(i,))        
+
         
     def reset(self):
         
         self.state=(0,0,3)
         
-        return np.array(self.state)
-
+        print("Environment has been Reset")
     
-    def path(self,action):
-        #self.history.append[self.state[:,1]]
-        #return [self.state,reward,done]
+
+    def step(self,action):
+        
+        action_lookup = {
+                            0:'N',
+                            1:'NE',
+                            2:'E',
+                            3:'SE',
+                            4:'S',
+                            5:'SW',
+                            6:'W',
+                            7:'NW'
+                        }
+        
+        state=self.state
+        if isinstance(action,int):
+            action=action_lookup[action]
+        
+        trans_p=self.trasitions(state,action)
+        max_p=sum(trans_p[:,2])
+        
+        ran = max_p * np.random.random_sample()
+        
+        temp=0
+        for i in trans_p:
+            temp=temp+i[2]
+            if ran<= temp:
+                new_state=i[0]
+                reward=i[1]
+                break
+        
+        done=False   
+        if new_state in self.targets:
+            new_state=(0,0,3)
+            reward=0
+            done=True
+            
+        self.history.append(new_state[:2])
+        
+        self.state=new_state
+        return [self.state,reward,done]
+    
+    
+    def play_policy(self,policy):
+        
+        state=self.state
+        while True:
+            action=policy[state[0],state[1],state[2]]
+            next_state,_,done=self.step(action)
+            if done:
+                break
+            
+        self.render()
         pass
     
     
-    def transition_prob(self,state,action,sigma=np.pi/4,v_min=20):
-        
-        def generate_uniform_windfield(self):
+    def generate_uniform_windfield(self):
 
             wind =[]
             for y in range(0,self.size):
@@ -70,22 +111,66 @@ class WindField():
 
             wind_field = np.array(wind_field)
             
+            self.wind_field=wind_field
+            
             return wind_field
+        
+        
+    def reward(self,state,windfield,c=10,w_max=15):
+        
+            [u,v]=windfield[state[0],state[1]]
+            if u !=0 and self.size-1-state[0] != 0:
+                reward=c*(np.sqrt(u**2+v**2)*np.cos(np.arctan(v/u)+np.arctan((self.size-1-state[1])/(self.size-1-state[0]))))/w_max
+            elif state[0]==6:
+                reward=c*(np.sqrt(u**2+v**2)*np.cos(np.arctan(v/u)+np.pi/2))/w_max
+            elif u==0:
+                reward=c*(np.sqrt(u**2+v**2)*np.cos(np.pi/2+np.arctan((self.size-1-state[1])/(self.size-1-state[0]))))/w_max
+            else:
+                reward=-1*c*(np.sqrt(u**2+v**2))/w_max
+                
+            return reward
     
+    
+    def trasitions(self,state,action,sigma=np.pi/4,v_min=20):
+        
         def integrand(x):
             return (np.e**((-1/2)*((x-omega)/sigma)**2))/(sigma*np.sqrt(2*np.pi))
         
-        wind_field=generate_uniform_windfield()
+        #wind_field=self.generate_uniform_windfield()
+        wind_field=self.wind_field
         
-        angle_lookup = {'N': -np.pi/2,
-                   'NE': -np.pi/4,
-                   'E': 0,
-                   'SE': np.pi/4,
-                   'S': np.pi/2,
-                   'SW': 3*np.pi/4,
-                   'W': np.pi,
-                   'NW': 5*np.pi/4
-                   }
+        angle_lookup = {
+                        'N': -np.pi/2,
+                        'NE': -np.pi/4,
+                        'E': 0,
+                        'SE': np.pi/4,
+                        'S': np.pi/2,
+                        'SW': 3*np.pi/4,
+                        'W': np.pi,
+                        'NW': 5*np.pi/4
+                       }
+        
+        action_lookup = {
+                            'N':0,
+                            'NE':1,
+                            'E':2,
+                            'SE':3,
+                            'S':4,
+                            'SW':5,
+                            'W':6,
+                            'NW':7
+                        }
+        
+        change_coordinates = {
+                                'N':np.array([0,1,0]),
+                                'NE':np.array([1,1,0]),
+                                'E':np.array([1,0,0]),
+                                'SE':np.array([1,-1,0]),
+                                'S':np.array([0,-1,0]),
+                                'SW':np.array([-1,-1,0]),
+                                'W':np.array([-1,0,0]),
+                                'NW':np.array([-1,1,0])
+                                }
         
         x = state[0]
         y = state[1]
@@ -96,15 +181,17 @@ class WindField():
         
         omega = np.arctan(F_y/F_x)
         F_mag = np.sqrt(F_x**2 + F_y**2)
-
+        
         # integration over gaussian for all actions
         P = []
         for i in range(8):
             I = quad(integrand, float(list(angle_lookup.values())[i]) - np.pi/8, float(list(angle_lookup.values())[i]) + np.pi/8)
-            next_state=np.array(state)+list(self.change_coordinates.values())[i]
-            P.append([next_state,I[0]])   
+            next_state=np.concatenate(((np.array(state)+np.array(list(change_coordinates.values())[i]))[:2],np.array([action_lookup[action]])))
+            if next_state[0]>=0 and next_state[0]<self.size and next_state[1]>=0 and next_state[1]<self.size:
+                transition_reward=self.reward(next_state,wind_field)
+                P.append([tuple(next_state),transition_reward,I[0]])   
         
-        return P
+        return np.array(P,dtype=object)
     
     
     def plot_windfield(self,wind_field):
@@ -115,22 +202,6 @@ class WindField():
         plt.quiver(x,-y,u,-v)
         
         
-    def reward(self,state,windfield,c=10,w_max=15):
-        
-        [u,v]=windfield[state[0],state[1]]
-        if u !=0 and self.size-1-state[0] != 0:
-            reward=c*(np.sqrt(u**2+v**2)*np.cos(np.arctan(v/u)+np.arctan((self.size-1-state[1])/(self.size-1-state[0]))))
-        elif state[0]==6:
-            reward=c*(np.sqrt(u**2+v**2)*np.cos(np.arctan(v/u)+np.pi/2))
-        elif u==0:
-            reward=c*(np.sqrt(u**2+v**2)*np.cos(np.pi/2+np.arctan((self.size-1-state[1])/(self.size-1-state[0]))))
-        else:
-            reward=-1*c*(np.sqrt(u**2+v**2))
-            
-        return reward
-    
-    
-    
     def render(self):
         canvas=np.zeros((100*self.size,100*self.size,3),dtype=np.uint8)
         
