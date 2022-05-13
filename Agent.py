@@ -1,6 +1,6 @@
 import numpy as np
 
-def value_iteration(env,theta,gamma):
+def value_iteration(env,theta=0.1,gamma=0.8):
     V=np.random.random(size=env.observation_space_shape)
     V[env.size-1,env.size-1]=np.zeros(shape=env.observation_space_shape[2])
     while True:
@@ -14,7 +14,7 @@ def value_iteration(env,theta,gamma):
                         temp=0
                         trans=env.trasitions(state=(i,j,k),action=l)
                         for m in trans:
-                            temp+=(m[2]*(m[1]+gamma*V[m[0]]))
+                            temp += (m[2]*(m[1]+gamma*V[m[0]]))
                         if temp>max_exp_reward:
                             max_exp_reward=temp
                     V[i,j,k]=max_exp_reward
@@ -31,7 +31,7 @@ def value_iteration(env,theta,gamma):
                         temp=0
                         trans=env.trasitions(state=(i,j,k),action=l)
                         for m in trans:
-                            temp+=m[2]*(m[1]+gamma*V[m[0]])
+                            temp += (m[2]*(m[1]+gamma*V[m[0]]))
                         exp_reward.append(temp)
                     policy[i,j,k]=np.argmax(exp_reward)
     
@@ -51,3 +51,4 @@ def play_policy(env,policy):
                 break
             
         env.render()
+        env.reset()

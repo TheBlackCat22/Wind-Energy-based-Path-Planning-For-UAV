@@ -17,18 +17,17 @@ class WindField():
         self.state=(0,0,3)
         self.history=[(0,0)]
         
-        self.wind_field=None
-        
         self.targets=[]
         for i in range(2,5):
-            self.targets.append((size-1,size-1)+(i,))        
-
+            self.targets.append((size-1,size-1)+(i,))  
+            
+        self.wind_field=None 
+               
         
     def reset(self):
         
         self.state=(0,0,3)
-        
-        print("Environment has been Reset")
+        self.history=[(0,0)]
     
 
     def step(self,action):
@@ -60,52 +59,95 @@ class WindField():
                 reward=i[1]
                 break
         
+        self.history.append(new_state[:2])
+        
         done=False   
         if new_state in self.targets:
             new_state=(0,0,3)
             reward=0
             done=True
-            
-        self.history.append(new_state[:2])
         
         self.state=new_state
         return [self.state,reward,done]
     
     
-    def generate_uniform_windfield(self):
+    def generate_windfield(self,type,varying=False):
 
+            
             wind =[]
             for y in range(0,self.size):
                 w =[]
                 for x in range(0,self.size):
-                    if x == float(self.size) - 1:
-                        w.append(np.pi/2)
-                    else:
-                        #w.append(np.random.normal(np.arctan((y-self.size+1)/(x-self.size+1)), np.pi/16))
-                        w.append(np.arctan((y-self.size+1)/(x-self.size+1)))
+                    
+                    if type==1 and not varying:
+                        w.append(np.arctan(1))
+                    elif type==1 and varying:
+                        w.append(np.random.normal(np.arctan(1), np.pi/16))
+                    
+                    elif type==2 and not varying:
+                        if x == float(self.size) - 1:
+                            w.append(np.pi/2)
+                        else:
+                            w.append(np.arctan((y-self.size+1)/(x-self.size+1)))    
+                    elif type==2 and varying:
+                        if x == float(self.size) - 1:
+                            w.append(np.random.normal(np.pi/2, np.pi/16))
+                        else:
+                            w.append(np.random.normal(np.arctan((y-self.size+1)/(x-self.size+1)), np.pi/16))
+                    
+                    elif type==3 and not varying:
+                        if y==3:
+                            w.append(0)
+                        else:
+                            w.append(np.arctan((x-3)/(y-3)))
+                    elif type==3 and varying:
+                        if y==3:
+                            w.append(np.random.normal(0, np.pi/16))
+                        else:
+                            w.append(np.random.normal(np.arctan((x-3)/(y-3)), np.pi/16))
+                            
+                    elif type==4 and not varying:
+                        if y==0:
+                            w.append(0)
+                        elif x==self.size-1:
+                            w.append(np.pi/2)
+                        else:
+                            w.append(-np.arctan((x)/(y)))
+                    elif type==4 and varying:
+                        if y==0:
+                            w.append(np.random.normal(0, np.pi/16))
+                        elif x==self.size-1:
+                            w.append(np.random.normal(np.pi/2, np.pi/16))
+                        else:
+                            w.append(np.random.normal(-np.arctan((x)/(y)), np.pi/16))
                 wind.append(w)
 
             wind_field = []
             for y in range(0,self.size):
                 W_x = []
                 for x in range(0,self.size):
-                    #u = np.cos(wind[y][x])*np.random.normal(10, 5)
-                    #v = np.sin(wind[y][x])*np.random.normal(10, 5)
-                    u = np.cos(wind[y][x])
-                    v = np.sin(wind[y][x])
+                    if varying:
+                        u = np.cos(wind[y][x])*np.random.normal(10, 5)
+                        v = np.sin(wind[y][x])*np.random.normal(10, 5)
+                    else:
+                        u = np.cos(wind[y][x])
+                        v = np.sin(wind[y][x])
                     W_x.append([u,v])
                 wind_field.append(W_x)
 
             wind_field = np.array(wind_field)
+
+            if varying:
+                self.wind_field=wind_field
             
-            self.wind_field=wind_field
+            return wind_field
+        
+        
+    def reward(self,state,c=30,w_max=15):
+
+            wind_field=self.wind_field
             
-            #return wind_field
-        
-        
-    def reward(self,state,windfield,c=10,w_max=15):
-        
-            [u,v]=windfield[state[0],state[1]]
+            [u,v]=wind_field[state[0],state[1]]
             if u !=0 and self.size-1-state[0] != 0:
                 reward=c*(np.sqrt(u**2+v**2)*np.cos(np.arctan(v/u)+np.arctan((self.size-1-state[1])/(self.size-1-state[0]))))/w_max
             elif state[0]==6:
@@ -115,15 +157,19 @@ class WindField():
             else:
                 reward=-1*c*(np.sqrt(u**2+v**2))/w_max
                 
+            if tuple(state) in self.targets:
+                reward=2*c
+            else:
+                reward-=5
+                
             return reward
     
     
-    def trasitions(self,state,action,sigma=np.pi/4,v_min=20):
+    def trasitions(self,state,action,sigma=np.pi/12,v_min=20):
         
         def integrand(x):
             return (np.e**((-1/2)*((x-omega)/sigma)**2))/(sigma*np.sqrt(2*np.pi))
         
-        #wind_field=self.generate_uniform_windfield()
         wind_field=self.wind_field
         
         angle_lookup = {
@@ -189,7 +235,7 @@ class WindField():
             I = quad(integrand, float(list(angle_lookup.values())[i]) - np.pi/8, float(list(angle_lookup.values())[i]) + np.pi/8)
             next_state=np.concatenate(((np.array(state)+np.array(list(change_coordinates.values())[i]))[:2],np.array([action_lookup[action]])))
             if next_state[0]>=0 and next_state[0]<self.size and next_state[1]>=0 and next_state[1]<self.size:
-                transition_reward=self.reward(next_state,wind_field)
+                transition_reward=self.reward(next_state)
                 p_total+=I[0]
                 P.append([tuple(next_state),transition_reward,I[0]])
         P=np.array(P,dtype=object)
@@ -198,10 +244,9 @@ class WindField():
         return P
     
     
-    def plot_windfield(self):
+    def plot_windfield(self,wind_field):
 
         x,y = np.meshgrid(np.linspace(0,6,7), np.linspace(0,6,7))
-        wind_field=self.wind_field
         u = wind_field[:,:,0]
         v = wind_field[:,:,1]
         plt.quiver(x,-y,u,-v)
@@ -217,7 +262,7 @@ class WindField():
         canvas[(100*self.size)-75:(100*self.size)-25,(100*self.size)-75:(100*self.size)-25]=circle
         
         airplane=imutils.resize(255*plt.imread(r"assets\airplane.png")[:,:,:3],width=100)
-        pos=(100*self.state[1],100*self.state[0])
+        pos=(100*self.history[-1][1],100*self.history[-1][0])
         facing=self.state[2]
         facing_img={
                     0:airplane,
