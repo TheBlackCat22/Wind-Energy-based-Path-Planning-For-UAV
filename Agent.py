@@ -8,17 +8,20 @@ def value_iteration(env,theta=0.1,gamma=0.8):
         for i in range(V.shape[0]):
             for j in range(V.shape[1]):
                 for k in range(V.shape[2]):
-                    v=V[i,j,k]
-                    max_exp_reward=0
-                    for l in range(len(env.action_space)):
-                        temp=0
-                        trans=env.trasitions(state=(i,j,k),action=l)
-                        for m in trans:
-                            temp += (m[2]*(m[1]+gamma*V[m[0]]))
-                        if temp>max_exp_reward:
-                            max_exp_reward=temp
-                    V[i,j,k]=max_exp_reward
-                    delta=max(delta,abs(v-V[i,j,k]))
+                    if (i,j,k) in env.targets:
+                        V[i,j,k]=0
+                    else:
+                        v=V[i,j,k]
+                        max_exp_reward=0
+                        for l in range(len(env.action_space)):
+                            temp=0
+                            trans=env.trasitions(state=(i,j,k),action=l)
+                            for m in trans:
+                                temp += (m[2]*(m[1]+gamma*V[m[0]]))
+                            if temp>max_exp_reward:
+                                max_exp_reward=temp
+                        V[i,j,k]=max_exp_reward
+                        delta=max(delta,abs(v-V[i,j,k]))
         if delta<theta:
             break
         
