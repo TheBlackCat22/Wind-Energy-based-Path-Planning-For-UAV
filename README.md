@@ -26,26 +26,34 @@ We assume that the UAV can move in eight directions, 𝐴 = 𝑁,𝑁𝐸,𝐸,�
 
 3)  Transition probabilities (P): 
 The transition probabilities $𝑃: 𝑃_{𝑠,𝑎}(𝑠,𝑠′)$ manage the probabilities of what state 𝑠′ is entered after executing each action A from state 𝑠. 
-A method based on Gaussian distribution to assign a realistic transition probabilities $𝑃_{𝑠,𝑎}(𝑠,𝑠′)$ in a time varying wind field to fit inside the MDP framework was used. The time-varying wind field is approximated by a Gaussian distribution, at each time step a vector is chosen from the distribution to find the direction and magnitude of the wind field 
-$$ P : P_{s,s'} = \dfrac{1}{\sigma\sqrt{2\pi}}\int_{\theta _ b - \frac{\pi}{8}}^{\theta _ a + \frac{\pi}{8}} e^{\frac{-1}{2}(\frac{v - w}{\sigma})^2} \,dv$$
+A method based on Gaussian distribution to assign a realistic transition probabilities $𝑃_{𝑠,𝑎}(𝑠,𝑠′)$ in a time varying wind field to fit inside the MDP framework was used. The time-varying wind field is approximated by a Gaussian distribution, at each time step a vector is chosen from the distribution to find the direction and magnitude of the wind field
+
+$$ P : P_{s,s'} = \dfrac{1}{\sigma\sqrt{2\pi}}\int_{\theta _ b - \frac{\pi}{8}}^{\theta _ a + \frac{\pi}{8}} e^{\frac{-1}{2}(\frac{v - w}{\sigma})^2} \,dv $$
+
 The Standard deviation will be selected by the user and is constant 
 
-4)  Reward for each transition and each action (R): 
-The ratio between the wind component facing the target point and the maximum expected wind value will be calculated and multiplying the result by a weight (C) - where (C) is selected by the user. 
+5)  Reward for each transition and each action (R): 
+The ratio between the wind component facing the target point and the maximum expected wind value will be calculated and multiplying the result by a weight (C) - where (C) is selected by the user.
+
 $$ R_a(s_{i,j}) = \dfrac{W_{i,j}\cos(\theta _ {i,j} + \theta _ T)}{W_{max}}C$$ 
+
 to this 2C was added if the UAV was in its target state and -5 was added in all other states. 
  
  
 ## 4.  Approach Taken 
 The value function ($𝑉 (𝑠)$) for a cell will be equal to, 
+
 $$ V(s_{i,j}) := E[R_a(s_{i,j}) + \gamma \Sigma (P_{s,a}(s, s') V(s'))]$$
 
 The optimal value function ($𝑉^∗(𝑠)$) for a cell will be given by, 
+
 $$ V^*(s_{i,j}) := max_a E[R_a(s_{i,j}) + \gamma \Sigma (P_{s,a}(s, s') V(s'))]$$
+
 where 𝑠 is the initial state, 𝑠′ the next possible state, $𝑅_𝑎(𝑠_{𝑖,𝑗})$ is the possible reward in state $𝑠_{𝑖,𝑗}$ taken an action 𝑎, $𝑃_{𝑠,𝑎}(𝑠,𝑠′)$  is the probability of reaching 𝑠′ while applying action 𝑎 in state $𝑠_{𝑖,𝑗}$ , and 𝑉 (𝑠′) is the value function for state 𝑠′. 
  
-Identifying the optimal values $𝑉^∗(𝑠)$ will lead to determining the optimal policy $𝜋^∗(𝑠)$ using, 
-$$\pi^*(s) = argmax_a(R_a(s_{i,j}) + \gamma \Sigma _{s' \in S} (P_{s,a}(s, s')V^*(s')))$$
+Identifying the optimal values $𝑉^∗(𝑠)$ will lead to determining the optimal policy $𝜋^∗(𝑠)$ using,
+
+$$ \pi^*(s) = argmax_a(R_a(s_{i,j}) + \gamma\Sigma_{s' \in S} (P_{s,a}(s, s') V^∗(s')))$$ 
 
 The value Iteration algorithm was implemented to generate the optimal policy.
 
