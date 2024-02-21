@@ -41,11 +41,11 @@ to this 2C was added if the UAV was in its target state and -5 was added in all 
  
  
 ## 4.  Approach Taken 
-The value function ($𝑉 (𝑠)$) for a cell will be equal to, 
+The value function $(V(s))$ for a cell will be equal to, 
 
 $$ V(s_{i,j}) := E[R_a(s_{i,j}) + \gamma \Sigma (P_{s,a}(s, s') V(s'))]$$
 
-The optimal value function ($𝑉^∗(𝑠)$) for a cell will be given by, 
+The optimal value function $(V^∗(s))$ for a cell will be given by, 
 
 $$ V^*(s_{i,j}) := max_a E[R_a(s_{i,j}) + \gamma \Sigma (P_{s,a}(s, s') V(s'))]$$
 
